@@ -4,17 +4,16 @@ import { Link, useNavigate } from "react-router-dom";
 
 export const Home = () => {
 	const navigate = useNavigate();
-	const token = sessionStorage.getItem("token");
-	const loggedIn = !!token;
+	const jwt = sessionStorage.getItem("jwt");
+	const loggedIn = !!jwt;
 
 	const handleLogout = () => {
-		sessionStorage.removeItem("token");
+		sessionStorage.removeItem("jwt");
 		navigate("/", { replace: true });
 	};
 
 	return (
 		<div className="container py-5" style={{ maxWidth: 720 }}>
-			{/* Hero image + title */}
 			<section className="text-center my-5">
 				<img
 					src="https://formulamiami.com/wp-content/uploads/2020/05/pista-1-e1589821193615.jpg"
@@ -22,13 +21,12 @@ export const Home = () => {
 					className="img-fluid mx-auto d-block rounded mb-4"
 					style={{ maxHeight: 280, objectFit: "cover", width: "100%" }}
 				/>
-				<h1 className="display-5 fw-semibold">Welcome to Only car Fans!</h1>
+				<h1 className="display-5 fw-semibold">Welcome</h1>
 				<p className="text-muted mt-2">
-					Sign in to start adding dream cars to your private garage.
+					Sign in to start adding your dream cars to your private garage.
 				</p>
 			</section>
 
-			{/* Bottom actions */}
 			<div className="d-flex justify-content-center gap-2 mt-4">
 				{loggedIn ? (
 					<>

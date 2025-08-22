@@ -5,12 +5,12 @@ import { getCars, addCar, deleteCar, API_BASE } from "../lib/api";
 
 export default function Private() {
     const navigate = useNavigate();
-    const token = sessionStorage.getItem("token");
+    const jwt = sessionStorage.getItem("jwt");
+
     const [cars, setCars] = useState([]);
     const [busy, setBusy] = useState(false);
     const [err, setErr] = useState("");
 
-    // Form state
     const [color, setColor] = useState("");
     const [make, setMake] = useState("");
     const [model, setModel] = useState("");
@@ -18,21 +18,25 @@ export default function Private() {
     const [miles, setMiles] = useState("");
 
     useEffect(() => {
-        if (!token) {
+        if (!jwt) {
             navigate("/login", { replace: true });
             return;
         }
         (async () => {
             try {
-                const list = await getCars(token);
+                const list = await getCars(jwt);
                 setCars(list);
             } catch (e) {
-                console.error(e);
-                sessionStorage.removeItem("token");
-                navigate("/login", { replace: true });
+                console.error("Load cars failed:", e);
+                if (e?.status === 401) {
+                    sessionStorage.removeItem("jwt");
+                    navigate("/login", { replace: true });
+                } else {
+                    setErr(e?.message || "Could not load your cars. Please try again.");
+                }
             }
         })();
-    }, [token, navigate]);
+    }, [jwt, navigate]);
 
     const resetForm = () => {
         setColor(""); setMake(""); setModel(""); setYear(""); setMiles("");
@@ -41,7 +45,7 @@ export default function Private() {
     const onAdd = async (e) => {
         e.preventDefault();
         setErr("");
-        if (!token) return navigate("/login", { replace: true });
+        if (!jwt) return navigate("/login", { replace: true });
 
         if (!color || !make || !model || !year || !miles) {
             setErr("Please fill out all fields.");
@@ -62,29 +66,38 @@ export default function Private() {
             setBusy(true);
             const created = await addCar(
                 { color, make, model, year: yearNum, miles: milesNum },
-                token
+                jwt
             );
             setCars((prev) => [created, ...prev]);
             resetForm();
         } catch (e) {
-            setErr(e.message || "Failed to add car.");
+            if (e?.status === 401) {
+                sessionStorage.removeItem("jwt");
+                navigate("/login", { replace: true });
+            } else {
+                setErr(e?.message || "Failed to add car.");
+            }
         } finally {
             setBusy(false);
         }
     };
 
     const onDelete = async (id) => {
-        if (!window.confirm("Delete this car?")) return;
         try {
-            await deleteCar(id, token);
+            await deleteCar(id, jwt);
             setCars((prev) => prev.filter((c) => c.id !== id));
         } catch (e) {
-            alert(e.message || "Failed to delete");
+            if (e?.status === 401) {
+                sessionStorage.removeItem("jwt");
+                navigate("/login", { replace: true });
+            } else {
+                alert(e?.message || "Failed to delete");
+            }
         }
     };
 
     const handleLogout = () => {
-        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("jwt");
         navigate("/", { replace: true });
     };
 
@@ -92,7 +105,6 @@ export default function Private() {
         <div className="container py-4" style={{ maxWidth: 900 }}>
             <h1 className="mb-3">Here is where you can add you dream car</h1>
 
-            {/* Input card */}
             <div className="card mb-4">
                 <div className="card-body">
                     <form onSubmit={onAdd}>
@@ -128,7 +140,6 @@ export default function Private() {
                 </div>
             </div>
 
-            {/* Cards list */}
             <div className="row g-3">
                 {cars.length === 0 && (
                     <div className="col-12">

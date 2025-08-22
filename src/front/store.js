@@ -2,8 +2,8 @@
 export const initialStore = () => {
   return {
     message: null,
-    token: sessionStorage.getItem("token") || null, // NEW
-    user: null, // optional, if you want to store email
+    jwt: sessionStorage.getItem("jwt") || null,
+    user: null,
     todos: [
       { id: 1, title: "Make the bed", background: null },
       { id: 2, title: "Do my homework", background: null },
@@ -25,18 +25,31 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-    // NEW: auth
-    case "set_token":
-      sessionStorage.setItem("token", action.payload?.token || "");
+    // Preferred JWT actions
+    case "set_jwt":
+      sessionStorage.setItem("jwt", action.payload?.jwt || "");
       return {
         ...store,
-        token: action.payload?.token || null,
+        jwt: action.payload?.jwt || null,
+        user: action.payload?.user || null,
+      };
+
+    case "clear_jwt":
+      sessionStorage.removeItem("jwt");
+      return { ...store, jwt: null, user: null };
+
+    // Backward-compat if something dispatches old names
+    case "set_token":
+      sessionStorage.setItem("jwt", action.payload?.token || "");
+      return {
+        ...store,
+        jwt: action.payload?.token || null,
         user: action.payload?.user || null,
       };
 
     case "clear_token":
-      sessionStorage.removeItem("token");
-      return { ...store, token: null, user: null };
+      sessionStorage.removeItem("jwt");
+      return { ...store, jwt: null, user: null };
 
     default:
       throw Error("Unknown action.");
