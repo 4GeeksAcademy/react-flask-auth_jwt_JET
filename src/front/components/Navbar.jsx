@@ -1,19 +1,31 @@
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
-export const Navbar = () => {
+export function Navbar() {
+	const navigate = useNavigate();
+	const { store, dispatch } = useGlobalReducer();
+	const loggedIn = !!store.token;
 
 	return (
-		<nav className="navbar navbar-light bg-light">
-			<div className="container">
-				<Link to="/">
-					<span className="navbar-brand mb-0 h1">React Boilerplate</span>
-				</Link>
-				<div className="ml-auto">
-					<Link to="/demo">
-						<button className="btn btn-primary">Check the Context in action</button>
-					</Link>
-				</div>
+		<nav className="navbar navbar-light bg-light px-3">
+			<Link className="navbar-brand" to="/">Car Fan</Link>
+			<div>
+				{loggedIn ? (
+					<button
+						className="btn btn-sm btn-outline-secondary"
+						onClick={() => {
+							dispatch({ type: "clear_token" });
+							navigate("/", { replace: true });
+						}}
+					>
+						Logout
+					</button>
+				) : (
+					<>
+
+					</>
+				)}
 			</div>
 		</nav>
 	);
-};
+}

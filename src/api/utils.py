@@ -1,4 +1,7 @@
-from flask import jsonify, url_for
+from flask import current_app, jsonify, url_for
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 class APIException(Exception):
     status_code = 400
@@ -15,22 +18,22 @@ class APIException(Exception):
         rv['message'] = self.message
         return rv
 
+
 def has_no_empty_params(rule):
     defaults = rule.defaults if rule.defaults is not None else ()
     arguments = rule.arguments if rule.arguments is not None else ()
     return len(defaults) >= len(arguments)
 
+
 def generate_sitemap(app):
     links = ['/admin/']
     for rule in app.url_map.iter_rules():
-        # Filter out rules we can't navigate to in a browser
-        # and rules that require parameters
         if "GET" in rule.methods and has_no_empty_params(rule):
             url = url_for(rule.endpoint, **(rule.defaults or {}))
             if "/admin/" not in url:
                 links.append(url)
-
-    links_html = "".join(["<li><a href='" + y + "'>" + y + "</a></li>" for y in links])
+    links_html = "".join(["<li><a href='" + y + "'>" +
+                         y + "</a></li>" for y in links])
     return """
         <div style="text-align: center;">
         <img style="max-height: 80px" src='https://storage.googleapis.com/breathecode/boilerplates/rigo-baby.jpeg' />
@@ -38,4 +41,40 @@ def generate_sitemap(app):
         <p>API HOST: <script>document.write('<input style="padding: 5px; width: 300px" type="text" value="'+window.location.href+'" />');</script></p>
         <p>Start working on your project by following the <a href="https://start.4geeksacademy.com/starters/full-stack" target="_blank">Quick Start</a></p>
         <p>Remember to specify a real endpoint path like: </p>
-        <ul style="text-align: left;">"""+links_html+"</ul></div>"
+        <ul style="text-align: left;">"""+links_html+"</ul></div>"""
+
+# Password hashing helpers
+
+
+def hash_password(plain: str) -> str:
+    return generate_password_hash(plain)
+
+
+def verify_password(hashed: str, plain: str) -> bool:
+    return check_password_hash(hashed, plain)
+
+# Token helpers
+
+
+def _get_serializer() -> URLSafeTimedSerializer:
+    secret = current_app.config.get("SECRET_KEY") or "sample key"
+    return URLSafeTimedSerializer(secret_key=secret, salt="auth-token")
+
+
+def generate_token(user_id: int) -> str:
+    s = _get_serializer()
+    return s.dumps({"uid": user_id})
+
+
+def verify_token(token: str, max_age_seconds: int = 60 * 60 * 24 * 7) -> int:
+    s = _get_serializer()
+    try:
+        data = s.loads(token, max_age=max_age_seconds)
+        uid = data.get("uid")
+        if not isinstance(uid, int):
+            raise APIException("Invalid token payload", status_code=401)
+        return uid
+    except SignatureExpired:
+        raise APIException("Token expired", status_code=401)
+    except BadSignature:
+        raise APIException("Invalid token", status_code=401)

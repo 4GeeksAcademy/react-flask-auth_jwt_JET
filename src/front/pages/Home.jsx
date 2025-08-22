@@ -1,52 +1,55 @@
-import React, { useEffect } from "react"
-import rigoImageUrl from "../assets/img/rigo-baby.jpg";
-import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+// /src/front/pages/Home.jsx
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 export const Home = () => {
+	const navigate = useNavigate();
+	const token = sessionStorage.getItem("token");
+	const loggedIn = !!token;
 
-	const { store, dispatch } = useGlobalReducer()
-
-	const loadMessage = async () => {
-		try {
-			const backendUrl = import.meta.env.VITE_BACKEND_URL
-
-			if (!backendUrl) throw new Error("VITE_BACKEND_URL is not defined in .env file")
-
-			const response = await fetch(backendUrl + "/api/hello")
-			const data = await response.json()
-
-			if (response.ok) dispatch({ type: "set_hello", payload: data.message })
-
-			return data
-
-		} catch (error) {
-			if (error.message) throw new Error(
-				`Could not fetch the message from the backend.
-				Please check if the backend is running and the backend port is public.`
-			);
-		}
-
-	}
-
-	useEffect(() => {
-		loadMessage()
-	}, [])
+	const handleLogout = () => {
+		sessionStorage.removeItem("token");
+		navigate("/", { replace: true });
+	};
 
 	return (
-		<div className="text-center mt-5">
-			<h1 className="display-4">Hello Rigo!!</h1>
-			<p className="lead">
-				<img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" />
-			</p>
-			<div className="alert alert-info">
-				{store.message ? (
-					<span>{store.message}</span>
+		<div className="container py-5" style={{ maxWidth: 720 }}>
+			{/* Hero image + title */}
+			<section className="text-center my-5">
+				<img
+					src="https://formulamiami.com/wp-content/uploads/2020/05/pista-1-e1589821193615.jpg"
+					alt="Hero"
+					className="img-fluid mx-auto d-block rounded mb-4"
+					style={{ maxHeight: 280, objectFit: "cover", width: "100%" }}
+				/>
+				<h1 className="display-5 fw-semibold">Welcome to Only car Fans!</h1>
+				<p className="text-muted mt-2">
+					Sign in to start adding dream cars to your private garage.
+				</p>
+			</section>
+
+			{/* Bottom actions */}
+			<div className="d-flex justify-content-center gap-2 mt-4">
+				{loggedIn ? (
+					<>
+						<Link className="btn btn-primary" to="/private">
+							Go to Private
+						</Link>
+						<button className="btn btn-outline-danger" onClick={handleLogout}>
+							Logout
+						</button>
+					</>
 				) : (
-					<span className="text-danger">
-						Loading message from the backend (make sure your python 🐍 backend is running)...
-					</span>
+					<>
+						<Link className="btn btn-primary" to="/login">
+							Login
+						</Link>
+						<Link className="btn btn-outline-primary" to="/signup">
+							Sign up
+						</Link>
+					</>
 				)}
 			</div>
 		</div>
 	);
-}; 
+};
